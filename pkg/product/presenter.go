@@ -10,10 +10,6 @@ type DTO struct {
 	CurrencyCode string   `json:"currency_code,omitempty" validate:"required,gte=3,lte=3,alpha"`
 }
 
-type Validate struct {
-	Field string `json:"field"`
-}
-
 // ToProduct transtform DTO to Product
 func (dto *DTO) ToProduct() *Product {
 	return &Product{
