@@ -3,6 +3,7 @@ package product
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/go-playground/validator/v10"
 )
@@ -22,6 +23,20 @@ var (
 	ErrDeleteProduct   = fmt.Errorf("Sorry failed delete product")
 	ErrFindProduct     = fmt.Errorf("Sorry failed find a product especificed")
 )
+
+// NewService instance a new service with repository
+func NewService(repo Repository) *Service {
+	logger := NewServiceLogger()
+	return &Service{
+		repo: repo,
+		log:  logger,
+	}
+}
+
+// NewServiceLogger generate new logger from server
+func NewServiceLogger() *log.Logger {
+	return log.New(os.Stdout, "[product.service]", 0)
+}
 
 // IsValid check playload as valid
 func (s Service) IsValid(dto *DTO) error {
