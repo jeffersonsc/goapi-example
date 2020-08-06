@@ -15,15 +15,12 @@ type Server struct {
 
 // NewServer create a new server
 func NewServer(ctx context.Context) *Server {
-	server := &Server{}
+	server := &Server{
+		ctx: ctx,
+	}
 	router := mux.NewRouter()
 
 	router.HandleFunc("/health", handler.Health)
-
-	// Setup routes from here
-	// router.HandleFunc("/products", func(w http.ResponseWriter, r *http.Request) {
-
-	// }).Methods(http.MethodGet)
 
 	server.Router = router
 
