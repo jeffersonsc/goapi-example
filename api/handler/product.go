@@ -49,13 +49,12 @@ func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 	service := product.NewService(ph.repo)
 	key := r.URL.RequestURI()
 
-	cache, err := ph.cache.Get(key)
 	// Case cache is not expired or invalidate return of cache
+	cache, err := ph.cache.Get(key)
 	if err == nil && time.Now().UTC().Unix() < cache.ExpiresAt {
 		// Pasrser unix to time
-		expiresAt := time.Unix(cache.ExpiresAt, 0)
+		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", cache.ExpiresAt))
 		w.WriteHeader(http.StatusOK)
-		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Second()))
 		w.Write(cache.Content)
 		return
 	}
@@ -73,8 +72,8 @@ func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 	expiresAt := time.Now().UTC().Add(time.Second * 30)
 	ph.cache.Set(key, expiresAt.Unix(), bytes)
 
+	w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Unix()))
 	w.WriteHeader(http.StatusOK)
-	w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Second()))
 	w.Write(bytes)
 }
 
