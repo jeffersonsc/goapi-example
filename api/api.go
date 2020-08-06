@@ -25,6 +25,7 @@ func NewServer(ctx context.Context) *Server {
 
 	router.Use(middleware.JSONAPI)
 	router.Use(middleware.CORS)
+	router.Use(middleware.AccessLog)
 
 	server.Router = router
 
