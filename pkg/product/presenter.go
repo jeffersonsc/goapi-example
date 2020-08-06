@@ -6,7 +6,7 @@ type DTO struct {
 	Name         string   `json:"name,omitempty" validate:"required"`
 	Description  string   `json:"description,omitempty" validate:"required"`
 	Price        float64  `json:"price,omitempty" validate:"required,gte=0,numeric"`
-	Images       []string `json:"images,omitempty" validate:"required,gte=0,numeric"`
+	Images       []string `json:"images,omitempty" validate:"required"`
 	CurrencyCode string   `json:"currency_code,omitempty" validate:"required,gte=3,lte=3,alpha"`
 }
 
