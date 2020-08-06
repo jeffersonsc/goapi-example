@@ -46,6 +46,7 @@ func (c Cache) Get(key string) (*CacheData, error) {
 
 	err := c.redis.Do(radix.Cmd(&data, "HGETALL", key))
 	if err != nil {
+		c.log.Println("Failed get data from cache - ", err.Error())
 		return nil, err
 	}
 
@@ -59,7 +60,11 @@ func (c Cache) Set(key string, expiresAt int64, content []byte) error {
 	cacheData.Content = content
 	cacheData.ExpiresAt = expiresAt
 
-	c.redis.Do(radix.FlatCmd(nil, "HSET", key, cacheData))
+	err := c.redis.Do(radix.FlatCmd(nil, "HSET", key, cacheData))
+	if err != nil {
+		c.log.Println("Failed set data from cache - ", err.Error())
+		return err
+	}
 	return nil
 }
 
@@ -67,6 +72,7 @@ func (c Cache) Set(key string, expiresAt int64, content []byte) error {
 func (c Cache) Del(key string) error {
 	err := c.redis.Do(radix.Cmd(nil, "HDEL", key))
 	if err != nil {
+		c.log.Println("Failed delete data from cache - ", err.Error())
 		return err
 	}
 
