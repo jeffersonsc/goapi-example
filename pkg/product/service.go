@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/go-playground/validator/v10"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -18,12 +19,13 @@ type Service struct {
 
 // ErrValidationError return case is not possible validate input data
 var (
-	ErrValidationError = fmt.Errorf("Sorry it not possible validate input data")
-	ErrCreateProduct   = fmt.Errorf("Sorry failed create a new product")
-	ErrUpdateProduct   = fmt.Errorf("Sorry failed update product")
-	ErrDeleteProduct   = fmt.Errorf("Sorry failed delete product")
-	ErrFindProduct     = fmt.Errorf("Sorry failed find a product especificed")
-	ErrProductNotFound = fmt.Errorf("Sorry failed product not found")
+	ErrValidationError  = fmt.Errorf("Sorry it not possible validate input data")
+	ErrCreateProduct    = fmt.Errorf("Sorry failed create a new product")
+	ErrUpdateProduct    = fmt.Errorf("Sorry failed update product")
+	ErrDeleteProduct    = fmt.Errorf("Sorry failed delete product")
+	ErrFindProduct      = fmt.Errorf("Sorry failed find a product especificed")
+	ErrProductNotFound  = fmt.Errorf("Sorry failed product not found")
+	ErrInvalidProductID = fmt.Errorf("Sorry invalid product id")
 )
 
 // NewService instance a new service with repository
@@ -100,9 +102,15 @@ func (s Service) Create(dto *DTO) (*DTO, error) {
 
 // Update product and revalidate cache
 func (s Service) Update(dto *DTO) (*DTO, error) {
+	var err error
 	product := dto.ToProduct()
 
-	err := s.repo.Update(product)
+	product.ID, err = primitive.ObjectIDFromHex(dto.ID)
+	if err != nil {
+		return nil, ErrInvalidProductID
+	}
+
+	err = s.repo.Update(product)
 	if err != nil {
 		s.log.Println("[Service - Update] Failed update prduct ERROR:", err.Error())
 		return nil, ErrUpdateProduct
@@ -113,9 +121,15 @@ func (s Service) Update(dto *DTO) (*DTO, error) {
 
 // Delete product and revalidate cache
 func (s Service) Delete(dto *DTO) (*DTO, error) {
+	var err error
 	product := dto.ToProduct()
 
-	err := s.repo.Update(product)
+	product.ID, err = primitive.ObjectIDFromHex(dto.ID)
+	if err != nil {
+		return nil, ErrInvalidProductID
+	}
+
+	err = s.repo.Update(product)
 	if err != nil {
 		s.log.Println("[Service - Delete] Failed delete prduct ERROR:", err.Error())
 		return nil, ErrDeleteProduct

@@ -65,6 +65,7 @@ func (ph ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		ph.log.Println("Failed decode json input ", err.Error())
 		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid json input"})
 		return
 	}
 
@@ -120,10 +121,60 @@ func (ph ProductHandler) Show(w http.ResponseWriter, r *http.Request) {
 
 // Update method PUT /products/:id
 func (ph ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
-	products := map[string]interface{}{"name": "test"}
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok || id == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid id params"})
+		return
+	}
+
+	body := product.DTO{}
+	defer r.Body.Close()
+
+	err := json.NewDecoder(r.Body).Decode(&body)
+	if err != nil {
+		ph.log.Println("Failed decode json input ", err.Error())
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid json input"})
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	service := product.NewService(ph.repo)
+
+	err = service.IsValid(&body)
+	if err != nil {
+		// Return 422
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": err.Error()})
+		return
+	}
+
+	result, err := service.Find(id)
+	if err != nil {
+		if err == product.ErrProductNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]interface{}{"message": err.Error()})
+			return
+		}
+
+		ph.log.Println("Failed find product for update", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed find product, please contact suport"})
+		return
+	}
+
+	body.ID = id
+	result, err = service.Update(&body)
+	if err != nil {
+		ph.log.Println("Failed update product", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed update product, please contact suport"})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+	json.NewEncoder(w).Encode(result)
 }
 
 // Delete method DELETE /products/:id
