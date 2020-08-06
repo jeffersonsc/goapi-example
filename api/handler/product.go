@@ -108,6 +108,9 @@ func (ph ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate cache from all products on implementation
+	ph.cache.Del(allProductsCacheKey)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)
 }
