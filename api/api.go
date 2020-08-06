@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/jeffersonsc/natureapi/api/handler"
+	"github.com/jeffersonsc/natureapi/api/middleware"
 )
 
 // Server make as http server
@@ -21,6 +22,8 @@ func NewServer(ctx context.Context) *Server {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/health", handler.Health)
+
+	router.Use(middleware.JSONAPI)
 
 	server.Router = router
 
