@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/go-playground/validator/v10"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Service layer intermediate data transit
@@ -22,6 +23,7 @@ var (
 	ErrUpdateProduct   = fmt.Errorf("Sorry failed update product")
 	ErrDeleteProduct   = fmt.Errorf("Sorry failed delete product")
 	ErrFindProduct     = fmt.Errorf("Sorry failed find a product especificed")
+	ErrProductNotFound = fmt.Errorf("Sorry failed product not found")
 )
 
 // NewService instance a new service with repository
@@ -74,6 +76,9 @@ func (s Service) FindAll() ([]*DTO, error) {
 func (s Service) Find(id string) (*DTO, error) {
 	product, err := s.repo.Find(id)
 	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			return nil, ErrProductNotFound
+		}
 		return nil, err
 	}
 

@@ -91,10 +91,31 @@ func (ph ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 // Show method GET /products/:id
 func (ph ProductHandler) Show(w http.ResponseWriter, r *http.Request) {
-	products := map[string]interface{}{"name": "test"}
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok || id == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid id params"})
+		return
+	}
+	service := product.NewService(ph.repo)
+
+	result, err := service.Find(id)
+	if err != nil {
+		if err == product.ErrProductNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]interface{}{"message": err.Error()})
+			return
+		}
+
+		ph.log.Println("Failed find product ", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed find product, please contact suport"})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+	json.NewEncoder(w).Encode(result)
 }
 
 // Update method PUT /products/:id
