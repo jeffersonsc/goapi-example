@@ -13,6 +13,8 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/a
 FROM alpine
 
 ENV PORT=3333
+ENV MONGO_URL=mongodb://nature:nature@mongo:27017
+ENV REDIS_URL=redis:6379
 
 COPY --from=builder /go/bin/app /go/bin/app
 
