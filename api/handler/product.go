@@ -28,9 +28,9 @@ func NewProductHandler(repo product.Repository, router *mux.Router) ProductHandl
 
 	router.HandleFunc("/v1/products", productHandler.Index).Methods(http.MethodGet)
 	router.HandleFunc("/v1/products", productHandler.Create).Methods(http.MethodPost)
-	router.HandleFunc("/v1/products/:id", productHandler.Show).Methods(http.MethodGet)
-	router.HandleFunc("/v1/products/:id", productHandler.Update).Methods(http.MethodPut)
-	router.HandleFunc("/v1/products/:id", productHandler.Delete).Methods(http.MethodDelete)
+	router.HandleFunc("/v1/products/{id}", productHandler.Show).Methods(http.MethodGet)
+	router.HandleFunc("/v1/products/{id}", productHandler.Update).Methods(http.MethodPut)
+	router.HandleFunc("/v1/products/{id}", productHandler.Delete).Methods(http.MethodDelete)
 
 	return productHandler
 }
@@ -42,7 +42,15 @@ func NewProductHandlerLogger() *log.Logger {
 
 // Index method GET /products
 func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
-	products := map[string]interface{}{"name": "test"}
+	service := product.NewService(ph.repo)
+
+	products, err := service.FindAll()
+	if err != nil {
+		ph.log.Println("Error on find all products ", err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed get all products, please contact suport"})
+		return
+	}
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(products)
