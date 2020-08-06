@@ -70,7 +70,7 @@ func (c Cache) Set(key string, expiresAt int64, content []byte) error {
 
 // Del delete data by key
 func (c Cache) Del(key string) error {
-	err := c.redis.Do(radix.Cmd(nil, "HDEL", key))
+	err := c.redis.Do(radix.Cmd(nil, "DEL", key))
 	if err != nil {
 		c.log.Println("Failed delete data from cache - ", err.Error())
 		return err
