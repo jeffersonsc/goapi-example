@@ -14,6 +14,8 @@ import (
 )
 
 func main() {
+	log := log.New(os.Stdout, "[main]", 0)
+
 	port := os.Getenv("PORT")
 	ctx := context.TODO()
 
@@ -22,12 +24,18 @@ func main() {
 		log.Fatal(err)
 	}
 
+	redisConn, err := db.NewRedisConn(os.Getenv("REDIS_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	productRepo := product.NewMongoRepository(ctx, dbConn)
+	productCache := product.NewStorageCache(redisConn)
 
 	api := api.NewServer(ctx)
 
 	// Setup routes from here
-	handler.NewProductHandler(productRepo, api.Router)
+	handler.NewProductHandler(productRepo, productCache, api.Router)
 
 	log.Println("Server running on port", port)
 

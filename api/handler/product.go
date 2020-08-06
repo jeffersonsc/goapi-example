@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/jeffersonsc/natureapi/pkg/product"
@@ -13,15 +15,17 @@ import (
 // ProductHandler setup routes from products (controllers or actions)
 type ProductHandler struct {
 	repo   product.Repository
+	cache  product.Storage
 	log    *log.Logger
 	Router *mux.Router
 }
 
 // NewProductHandler create a new instance of handler
-func NewProductHandler(repo product.Repository, router *mux.Router) ProductHandler {
+func NewProductHandler(repo product.Repository, cache product.Storage, router *mux.Router) ProductHandler {
 	logger := NewProductHandlerLogger()
 	productHandler := ProductHandler{
 		repo:   repo,
+		cache:  cache,
 		log:    logger,
 		Router: router,
 	}
@@ -43,6 +47,18 @@ func NewProductHandlerLogger() *log.Logger {
 // Index method GET /products
 func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 	service := product.NewService(ph.repo)
+	key := r.URL.RequestURI()
+
+	cache, err := ph.cache.Get(key)
+	// Case cache is not expired or invalidate return of cache
+	if err == nil && time.Now().UTC().Unix() < cache.ExpiresAt {
+		// Pasrser unix to time
+		expiresAt := time.Unix(cache.ExpiresAt, 0)
+		w.WriteHeader(http.StatusOK)
+		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Second()))
+		w.Write(cache.Content)
+		return
+	}
 
 	products, err := service.FindAll()
 	if err != nil {
@@ -52,8 +68,14 @@ func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert result into bytes and save on cache
+	bytes, _ := json.Marshal(products)
+	expiresAt := time.Now().UTC().Add(time.Second * 30)
+	ph.cache.Set(key, expiresAt.Unix(), bytes)
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+	w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Second()))
+	w.Write(bytes)
 }
 
 // Create method POST /products
