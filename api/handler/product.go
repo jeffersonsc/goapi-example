@@ -12,6 +12,8 @@ import (
 	"github.com/jeffersonsc/natureapi/pkg/product"
 )
 
+const allProductsCacheKey = "products"
+
 // ProductHandler setup routes from products (controllers or actions)
 type ProductHandler struct {
 	repo   product.Repository
@@ -47,10 +49,9 @@ func NewProductHandlerLogger() *log.Logger {
 // Index method GET /products
 func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 	service := product.NewService(ph.repo)
-	key := r.URL.RequestURI()
 
 	// Case cache is not expired or invalidate return of cache
-	cache, err := ph.cache.Get(key)
+	cache, err := ph.cache.Get(allProductsCacheKey)
 	if err == nil && time.Now().UTC().Unix() < cache.ExpiresAt {
 		// Pasrser unix to time
 		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", cache.ExpiresAt))
@@ -70,7 +71,7 @@ func (ph ProductHandler) Index(w http.ResponseWriter, r *http.Request) {
 	// Convert result into bytes and save on cache
 	bytes, _ := json.Marshal(products)
 	expiresAt := time.Now().UTC().Add(time.Second * 30)
-	ph.cache.Set(key, expiresAt.Unix(), bytes)
+	ph.cache.Set(allProductsCacheKey, expiresAt.Unix(), bytes)
 
 	w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Unix()))
 	w.WriteHeader(http.StatusOK)
