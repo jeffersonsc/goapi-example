@@ -165,6 +165,7 @@ func (ph ProductHandler) Show(w http.ResponseWriter, r *http.Request) {
 // Update method PUT /products/:id
 func (ph ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	key := r.URL.String()
 	id, ok := vars["id"]
 	if !ok || id == "" {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -216,6 +217,9 @@ func (ph ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidate cache from product after update product
+	ph.cache.Del(key)
+
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(result)
 }
@@ -223,6 +227,7 @@ func (ph ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 // Delete method DELETE /products/:id
 func (ph ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	key := r.URL.String()
 	id, ok := vars["id"]
 	if !ok || id == "" {
 		w.WriteHeader(http.StatusUnprocessableEntity)
@@ -252,6 +257,9 @@ func (ph ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed delete product, please contact suport"})
 		return
 	}
+
+	// Delete product cache
+	ph.cache.Del(key)
 
 	w.WriteHeader(http.StatusNoContent)
 }
