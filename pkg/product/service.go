@@ -27,9 +27,11 @@ var (
 // NewService instance a new service with repository
 func NewService(repo Repository) *Service {
 	logger := NewServiceLogger()
+	validator := validator.New()
 	return &Service{
-		repo: repo,
-		log:  logger,
+		repo:      repo,
+		validator: validator,
+		log:       logger,
 	}
 }
 
