@@ -118,12 +118,24 @@ func (ph ProductHandler) Create(w http.ResponseWriter, r *http.Request) {
 // Show method GET /products/:id
 func (ph ProductHandler) Show(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
+	key := r.URL.String()
 	id, ok := vars["id"]
 	if !ok || id == "" {
 		w.WriteHeader(http.StatusUnprocessableEntity)
 		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid id params"})
 		return
 	}
+
+	// Case cache is not expired or invalidate return of cache
+	cache, err := ph.cache.Get(key)
+	if err == nil && time.Now().UTC().Unix() < cache.ExpiresAt {
+		// Pasrser unix to time
+		w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", cache.ExpiresAt))
+		w.WriteHeader(http.StatusOK)
+		w.Write(cache.Content)
+		return
+	}
+
 	service := product.NewService(ph.repo)
 
 	result, err := service.Find(id)
@@ -140,8 +152,14 @@ func (ph ProductHandler) Show(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Convert result into bytes and save on cache
+	bytes, _ := json.Marshal(result)
+	expiresAt := time.Now().UTC().Add(time.Second * 30)
+	ph.cache.Set(key, expiresAt.Unix(), bytes)
+
+	w.Header().Add("Cache-Control", fmt.Sprintf("max-age=%d", expiresAt.Unix()))
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(result)
+	w.Write(bytes)
 }
 
 // Update method PUT /products/:id
