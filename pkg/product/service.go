@@ -120,20 +120,20 @@ func (s Service) Update(dto *DTO) (*DTO, error) {
 }
 
 // Delete product and revalidate cache
-func (s Service) Delete(dto *DTO) (*DTO, error) {
+func (s Service) Delete(dto *DTO) error {
 	var err error
 	product := dto.ToProduct()
 
 	product.ID, err = primitive.ObjectIDFromHex(dto.ID)
 	if err != nil {
-		return nil, ErrInvalidProductID
+		return ErrInvalidProductID
 	}
 
-	err = s.repo.Update(product)
+	err = s.repo.Delete(product)
 	if err != nil {
 		s.log.Println("[Service - Delete] Failed delete prduct ERROR:", err.Error())
-		return nil, ErrDeleteProduct
+		return ErrDeleteProduct
 	}
 
-	return FromProduct(product), nil
+	return nil
 }

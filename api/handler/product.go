@@ -179,8 +179,36 @@ func (ph ProductHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 // Delete method DELETE /products/:id
 func (ph ProductHandler) Delete(w http.ResponseWriter, r *http.Request) {
-	products := map[string]interface{}{"name": "test"}
+	vars := mux.Vars(r)
+	id, ok := vars["id"]
+	if !ok || id == "" {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Invalid id params"})
+		return
+	}
+	service := product.NewService(ph.repo)
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(products)
+	result, err := service.Find(id)
+	if err != nil {
+		if err == product.ErrProductNotFound {
+			w.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(w).Encode(map[string]interface{}{"message": err.Error()})
+			return
+		}
+
+		ph.log.Println("Failed find product ", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed find product, please contact suport"})
+		return
+	}
+
+	err = service.Delete(result)
+	if err != nil {
+		ph.log.Println("Failed delete product ", err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{"message": "Failed delete product, please contact suport"})
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
