@@ -24,6 +24,7 @@ func NewServer(ctx context.Context) *Server {
 	router.HandleFunc("/health", handler.Health)
 
 	router.Use(middleware.JSONAPI)
+	router.Use(middleware.CORS)
 
 	server.Router = router
 
